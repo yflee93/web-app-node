@@ -1,0 +1,6 @@
+{
+  "mongoURI": "mongodb+srv://yflee93:Wawjys1993@webdev.y4ctb.mongodb.net/myFirstDatabase?retryWrites=true&w=majority",
+  "adminCode": "admin123",
+  "reviewerCode": "reviewer000",
+  "jwtSecret": "SecretToken"
+}
