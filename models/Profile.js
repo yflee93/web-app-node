@@ -19,23 +19,27 @@ const ProfileSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user'
     }],
-    movieCollections: [
+    movieCollections:
         {
-            favorites: {
-                type: [String]
-            },
-            bookmarks: {
-                type: [String]
-            },
-            recommends: {
-                type: [String]
-            },
+            favorites: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'movie'
+                }
+            ],
+            bookmarks: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'movie'
+                }
+            ],
+            recommends: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'movie'
+                }
+            ],
         }
-    ],
-    reviews: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'review'
-    }],
 });
 
 module.exports = mongoose.model('profile', ProfileSchema);
