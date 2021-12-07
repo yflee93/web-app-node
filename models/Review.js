@@ -11,6 +11,12 @@ const ReviewSchema = mongoose.Schema({
     rating: {
         type: Number
     },
+    poster:{
+        type: String
+    },
+    title:{
+        type: String
+    }
 });
 
 module.exports = mongoose.model('review', ReviewSchema);

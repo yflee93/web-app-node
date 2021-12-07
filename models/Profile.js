@@ -5,37 +5,29 @@ const ProfileSchema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'user'
     },
+    avatar: {
+        type: String
+    },
     location: {
         type: String
     },
     bio: {
         type: String
     },
-    followingList: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user'
-    }],
-    followersList: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'user'
-    }],
-    movieCollections: [
+    movieCollections:
         {
-            favorites: {
-                type: [String]
-            },
-            bookmarks: {
-                type: [String]
-            },
-            recommends: {
-                type: [String]
-            },
-        }
-    ],
+            favorites: [Number],
+            bookmarks: [Number],
+            recommends: [Number],
+        },
     reviews: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'review'
     }],
+    articles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'article'
+    }]
 });
 
 module.exports = mongoose.model('profile', ProfileSchema);
