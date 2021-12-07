@@ -18,5 +18,4 @@ const ReviewSchema = mongoose.Schema({
         type: String
     }
 });
-
 module.exports = mongoose.model('review', ReviewSchema);
