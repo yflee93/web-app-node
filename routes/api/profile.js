@@ -1,5 +1,5 @@
 const auth = require("../../middleware/auth");
-const Profile = require('../../models/profile');
+const Profile = require('../../models/Profile');
 const User = require("../../models/User");
 const {AvatarGenerator} = require("random-avatar-generator");
 
@@ -11,7 +11,11 @@ module.exports = (app) => {
     // @access---> Private
     app.get('/api/profile', auth, async (req, res) => {
         try {
-            const profile = await Profile.findOne({ user: req.user.id }).populate('user', 'name');
+            const profile =
+                await Profile.findOne({ user: req.user.id })
+                    .populate('user', 'name')
+                    .populate('reviews')
+                    .populate('articles');
             res.json(profile);
         } catch(err) {
             console.error(err.message);
@@ -48,8 +52,6 @@ module.exports = (app) => {
             profile.avatar = generator.generateRandomAvatar();
             profile.location = location;
             profile.bio = bio;
-            profile.followingList = [];
-            profile.followersList = [];
             profile.reviews = [];
             profile.articles = [];
             const newMovieCollections = {};
@@ -74,7 +76,10 @@ module.exports = (app) => {
     // @access---> Public
     app.get('/api/profile/:user_id', async (req,res) => {
         try {
-            const profile = await Profile.findOne({user: req.params.user_id}).populate('user', 'name');
+            const profile = await Profile.findOne({user: req.params.user_id})
+                .populate('user', 'name')
+                .populate('reviews')
+                .populate('articles');;
             res.json(profile);
         }catch (err) {
             console.error(err.message);
