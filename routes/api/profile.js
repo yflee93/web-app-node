@@ -42,7 +42,7 @@ module.exports = (app) => {
                     {user: req.user.id},
                     {$set: {location: location, bio:bio}},
                     {new: true}
-                ).populate('user', 'name');
+                ).populate('user', ['name', 'type', 'email']);
                 return res.json(profile);
             }
 
@@ -61,7 +61,7 @@ module.exports = (app) => {
             profile.movieCollections = newMovieCollections;
             await User.findByIdAndUpdate(req.user.id, {$set: {name}});
             await profile.save();
-            profile = await Profile.findOne({user: req.user.id}).populate('user', 'name');
+            profile = await Profile.findOne({user: req.user.id}).populate('user', ['name', 'type', 'email']);
             res.json(profile);
 
         } catch(err) {
@@ -69,6 +69,21 @@ module.exports = (app) => {
             res.status(500).send('Server Error');
         }
     });
+
+
+    // @route ---> GET api/profiles
+    // @desc  ---> Get all profiles
+    // @access---> Public
+    app.get('/api/profiles', async (req,res) => {
+        try {
+            const profiles = await Profile.find().populate('user', ['name', 'type']);
+            res.json(profiles);
+
+        }catch (err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    })
 
 
     // @route ---> GET api/profile/:userId
