@@ -111,6 +111,7 @@ module.exports = (app) => {
         try {
             const {movie_id, collection, author_id} = req.params;
             if (author_id !== req.user.id) {
+                console.log("author_id !== req.user.id");
                 const current_user = await User.findById(req.user.id);
                 if (current_user.type !== 'admin') {
                     res.status(401).send('No authorization for deleting collections, admin & author only');
@@ -120,13 +121,13 @@ module.exports = (app) => {
             let {favorites, bookmarks, recommends} = {...profile.movieCollections};
             switch (collection) {
                 case "favorite":
-                    favorites = favorites.filter(favorite => favorite.toString() !== movie_id);
+                    favorites = favorites.filter(favorite => favorite.toString() != movie_id);
                     break;
                 case "bookmark":
-                    bookmarks = bookmarks.filter(bookmark => bookmark.toString() !== movie_id);
+                    bookmarks = bookmarks.filter(bookmark => bookmark.toString() != movie_id);
                     break;
                 case "recommend":
-                    recommends = recommends.filter(recommend => recommend.toString() !== movie_id);
+                    recommends = recommends.filter(recommend => recommend.toString() != movie_id);
                     break;
                 default:
                     break;
@@ -136,6 +137,47 @@ module.exports = (app) => {
             }
             const new_profile = await Profile.findOneAndUpdate({user:author_id}, {$set: {
                 movieCollections: new_collection
+                }}, {new: true}).populate('user', ['name', 'type', 'email']);
+            res.json(new_profile);
+        }
+        catch(err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    })
+
+    // @route ---> POST /api/profile/:movie_id/:collection
+    // @desc  ---> Add a collection item from movieCollections in a profile, by author or admin
+    // @access---> Private
+    app.post("/api/profile/:movie_id/:collection/:author_id", auth, async(req , res)=> {
+        try {
+            const {movie_id, collection, author_id} = req.params;
+            if (author_id !== req.user.id) {
+                const current_user = await User.findById(req.user.id);
+                if (current_user.type !== 'admin') {
+                    res.status(401).send('No authorization for deleting collections, admin & author only');
+                }
+            }
+            let profile = await Profile.findOne({user:author_id});
+            let {favorites, bookmarks, recommends} = {...profile.movieCollections};
+            switch (collection) {
+                case "favorite":
+                    favorites.push(movie_id);
+                    break;
+                case "bookmark":
+                    bookmarks.push(movie_id);
+                    break;
+                case "recommend":
+                    recommends.push(movie_id);
+                    break;
+                default:
+                    break;
+            }
+            let new_collection = {
+                favorites, bookmarks, recommends
+            }
+            const new_profile = await Profile.findOneAndUpdate({user:author_id}, {$set: {
+                    movieCollections: new_collection
                 }}, {new: true}).populate('user', ['name', 'type', 'email']);
             res.json(new_profile);
         }
