@@ -13,7 +13,7 @@ module.exports = (app) => {
         try {
             const profile =
                 await Profile.findOne({ user: req.user.id })
-                    .populate('user', 'name')
+                    .populate('user', ['name', 'type', 'email'])
                     .populate('reviews')
                     .populate('articles');
             res.json(profile);
@@ -77,9 +77,9 @@ module.exports = (app) => {
     app.get('/api/profile/:user_id', async (req,res) => {
         try {
             const profile = await Profile.findOne({user: req.params.user_id})
-                .populate('user', 'name')
+                .populate('user', ['name', 'type'])
                 .populate('reviews')
-                .populate('articles');;
+                .populate('articles');
             res.json(profile);
         }catch (err) {
             console.error(err.message);
@@ -90,12 +90,18 @@ module.exports = (app) => {
     })
 
     // @route ---> DELETE /api/profile/:movie_id/:collection
-    // @desc  ---> Remove a collection item from movieCollections in a profile
+    // @desc  ---> Remove a collection item from movieCollections in a profile, by author or admin
     // @access---> Private
-    app.delete("/api/profile/:movie_id/:collection", auth, async(req , res)=> {
+    app.delete("/api/profile/:movie_id/:collection/:author_id", auth, async(req , res)=> {
         try {
-            const {movie_id, collection} = req.params;
-            let profile = await Profile.findOne({user:req.user.id});
+            const {movie_id, collection, author_id} = req.params;
+            if (author_id !== req.user.id) {
+                const current_user = await User.findById(req.user.id);
+                if (current_user.type !== 'admin') {
+                    res.status(401).send('No authorization for deleting collections, admin & author only');
+                }
+            }
+            let profile = await Profile.findOne({user:author_id});
             let {favorites, bookmarks, recommends} = {...profile.movieCollections};
             switch (collection) {
                 case "favorite":
@@ -113,9 +119,9 @@ module.exports = (app) => {
             let new_collection = {
                 favorites, bookmarks, recommends
             }
-            const new_profile = await Profile.findOneAndUpdate({user:req.user.id}, {$set: {
+            const new_profile = await Profile.findOneAndUpdate({user:author_id}, {$set: {
                 movieCollections: new_collection
-                }}, {new: true}).populate('user', 'name');
+                }}, {new: true}).populate('user', ['name', 'type', 'email']);
             res.json(new_profile);
         }
         catch(err) {
