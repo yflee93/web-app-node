@@ -14,7 +14,9 @@ module.exports = (app) => {
             content,
             rating,
             poster,
-            title
+            title,
+            movieName,
+            movieRating
         } = req.body;
 
         try {
@@ -28,11 +30,24 @@ module.exports = (app) => {
 
             await review.save();
             await Profile.findOneAndUpdate({user: req.user.id}, {$push: {
-                reviews: review.id
-                }});
-            await Movie.findOneAndUpdate({external_id: movie_id}, {$push: {
                     reviews: review.id
                 }});
+            let curMovie = await Movie.findOne({originalId: movie_id});
+            if (curMovie) {
+                await Movie.findOneAndUpdate({originalId: movie_id}, {$push: {
+                        reviews: review.id
+                    }});
+            }
+            else {
+                let newMovie = new Movie({
+                    movieName: movieName,
+                    rating: movieRating,
+                    reviews: [review.id],
+                    articles: [],
+                    originalId: movie_id
+                });
+                await newMovie.save();
+            }
 
             res.json(review);
 
@@ -48,7 +63,7 @@ module.exports = (app) => {
         try {
             const {review_id, movie_id, author_id} = req.params;
             const currentUser = await User.findById(req.user.id);
-            console.log(currentUser);
+            // console.log(currentUser);
             if (currentUser.type !== 'admin' && req.user.id !== author_id) {
                 return res.status(401).send(`Delete Review Unauthorized! Admin/Author Only,
                 ${currentUser.type}, ${req.user.id}, ${author_id}`);
@@ -59,7 +74,7 @@ module.exports = (app) => {
                     reviews: review_id
                 }
             });
-            await Movie.findOneAndUpdate({external_id: movie_id}, {$pull: {
+            await Movie.findOneAndUpdate({originalId: movie_id}, {$pull: {
                     reviews: review_id
                 }});
             await Review.findByIdAndDelete(review_id);
@@ -69,5 +84,35 @@ module.exports = (app) => {
             console.error(err.message);
             res.status(500).send('Server Error');
         }
-    })
+    });
+
+    app.get('/api/review/:movie_id', async (req, res) => {
+        const {movie_id} = req.params;
+        try {
+            let reviews = [];
+            // console.log(movie_id);
+            let reviewIds = await Movie.findOne({originalId: movie_id}).select({reviews: 1, _id: 0}).
+            then((reviewObj) => {
+                if (reviewObj) {
+                    return reviewObj.reviews;
+                }
+                else return [];
+            });
+            // let reviewIds = await Movie.findOne({movieName: 'Saw II'});
+            for (const reviewId of reviewIds) {
+                let curReview = await Review.findOne({_id: reviewId});
+                // console.log("curReview:");
+                // console.log(curReview);
+                reviews.push(curReview);
+            }
+            // console.log("reviewIds:");
+            // console.log(reviewIds);
+            // console.log("reviews:");
+            // console.log(reviews);
+            res.json(reviews);
+        } catch(err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    });
 }
