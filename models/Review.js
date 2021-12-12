@@ -16,6 +16,9 @@ const ReviewSchema = mongoose.Schema({
     },
     title:{
         type: String
+    },
+    originalId:{
+        type: Number
     }
 });
 

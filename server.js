@@ -30,3 +30,4 @@ require('./routes/api/users')(app);
 require('./routes/api/auth')(app);
 require('./routes/api/profile')(app);
 require('./routes/api/review')(app);
+require('./routes/api/search')(app);
