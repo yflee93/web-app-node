@@ -89,7 +89,7 @@ module.exports = (app) => {
         const {movie_id} = req.params;
         try {
             let articles = [];
-            console.log(movie_id);
+            // console.log(movie_id);
             let articleIds = await Movie.findOne({originalId: movie_id}).select({articles: 1, _id: 0}).
             then((articleObj) => {
                 if (articleObj) {
@@ -100,12 +100,12 @@ module.exports = (app) => {
             // let reviewIds = await Movie.findOne({movieName: 'Saw II'});
             for (const articleId of articleIds) {
                 let curArticle = await Article.findOne({_id: articleId});
-                console.log("curArticle:");
-                console.log(curArticle);
+                // console.log("curArticle:");
+                // console.log(curArticle);
                 articles.push(curArticle);
             }
-            console.log("articles:");
-            console.log(articles);
+            // console.log("articles:");
+            // console.log(articles);
             res.json(articles);
         } catch(err) {
             console.error(err.message);
