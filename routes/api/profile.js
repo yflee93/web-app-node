@@ -1,5 +1,5 @@
 const auth = require("../../middleware/auth");
-const Profile = require('../../models/profile');
+const Profile = require('../../models/Profile');
 const User = require("../../models/User");
 const {AvatarGenerator} = require("random-avatar-generator");
 
@@ -11,7 +11,11 @@ module.exports = (app) => {
     // @access---> Private
     app.get('/api/profile', auth, async (req, res) => {
         try {
-            const profile = await Profile.findOne({ user: req.user.id }).populate('user', 'name');
+            const profile =
+                await Profile.findOne({ user: req.user.id })
+                    .populate('user', ['name', 'type', 'email'])
+                    .populate('reviews')
+                    .populate('articles');
             res.json(profile);
         } catch(err) {
             console.error(err.message);
@@ -38,7 +42,7 @@ module.exports = (app) => {
                     {user: req.user.id},
                     {$set: {location: location, bio:bio}},
                     {new: true}
-                ).populate('user', 'name');
+                ).populate('user', ['name', 'type', 'email']);
                 return res.json(profile);
             }
 
@@ -48,8 +52,6 @@ module.exports = (app) => {
             profile.avatar = generator.generateRandomAvatar();
             profile.location = location;
             profile.bio = bio;
-            profile.followingList = [];
-            profile.followersList = [];
             profile.reviews = [];
             profile.articles = [];
             const newMovieCollections = {};
@@ -59,7 +61,7 @@ module.exports = (app) => {
             profile.movieCollections = newMovieCollections;
             await User.findByIdAndUpdate(req.user.id, {$set: {name}});
             await profile.save();
-            profile = await Profile.findOne({user: req.user.id}).populate('user', 'name');
+            profile = await Profile.findOne({user: req.user.id}).populate('user', ['name', 'type', 'email']);
             res.json(profile);
 
         } catch(err) {
@@ -69,12 +71,30 @@ module.exports = (app) => {
     });
 
 
+    // @route ---> GET api/profiles
+    // @desc  ---> Get all profiles
+    // @access---> Public
+    app.get('/api/profiles', async (req,res) => {
+        try {
+            const profiles = await Profile.find().populate('user', ['name', 'type']);
+            res.json(profiles);
+
+        }catch (err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    })
+
+
     // @route ---> GET api/profile/:userId
     // @desc  ---> Get profile by user Id
     // @access---> Public
     app.get('/api/profile/:user_id', async (req,res) => {
         try {
-            const profile = await Profile.findOne({user: req.params.user_id}).populate('user', 'name');
+            const profile = await Profile.findOne({user: req.params.user_id})
+                .populate('user', ['name', 'type'])
+                .populate('reviews')
+                .populate('articles');
             res.json(profile);
         }catch (err) {
             console.error(err.message);
@@ -85,22 +105,29 @@ module.exports = (app) => {
     })
 
     // @route ---> DELETE /api/profile/:movie_id/:collection
-    // @desc  ---> Remove a collection item from movieCollections in a profile
+    // @desc  ---> Remove a collection item from movieCollections in a profile, by author or admin
     // @access---> Private
-    app.delete("/api/profile/:movie_id/:collection", auth, async(req , res)=> {
+    app.delete("/api/profile/:movie_id/:collection/:author_id", auth, async(req , res)=> {
         try {
-            const {movie_id, collection} = req.params;
-            let profile = await Profile.findOne({user:req.user.id});
+            const {movie_id, collection, author_id} = req.params;
+            if (author_id !== req.user.id) {
+                console.log("author_id !== req.user.id");
+                const current_user = await User.findById(req.user.id);
+                if (current_user.type !== 'admin') {
+                    res.status(401).send('No authorization for deleting collections, admin & author only');
+                }
+            }
+            let profile = await Profile.findOne({user:author_id});
             let {favorites, bookmarks, recommends} = {...profile.movieCollections};
             switch (collection) {
                 case "favorite":
-                    favorites = favorites.filter(favorite => favorite.toString() !== movie_id);
+                    favorites = favorites.filter(favorite => favorite.toString() != movie_id);
                     break;
                 case "bookmark":
-                    bookmarks = bookmarks.filter(bookmark => bookmark.toString() !== movie_id);
+                    bookmarks = bookmarks.filter(bookmark => bookmark.toString() != movie_id);
                     break;
                 case "recommend":
-                    recommends = recommends.filter(recommend => recommend.toString() !== movie_id);
+                    recommends = recommends.filter(recommend => recommend.toString() != movie_id);
                     break;
                 default:
                     break;
@@ -108,9 +135,50 @@ module.exports = (app) => {
             let new_collection = {
                 favorites, bookmarks, recommends
             }
-            const new_profile = await Profile.findOneAndUpdate({user:req.user.id}, {$set: {
-                movieCollections: new_collection
-                }}, {new: true}).populate('user', 'name');
+            const new_profile = await Profile.findOneAndUpdate({user:author_id}, {$set: {
+                    movieCollections: new_collection
+                }}, {new: true}).populate('user', ['name', 'type', 'email']);
+            res.json(new_profile);
+        }
+        catch(err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    })
+
+    // @route ---> POST /api/profile/:movie_id/:collection
+    // @desc  ---> Add a collection item from movieCollections in a profile, by author or admin
+    // @access---> Private
+    app.post("/api/profile/:movie_id/:collection/:author_id", auth, async(req , res)=> {
+        try {
+            const {movie_id, collection, author_id} = req.params;
+            if (author_id !== req.user.id) {
+                const current_user = await User.findById(req.user.id);
+                if (current_user.type !== 'admin') {
+                    res.status(401).send('No authorization for deleting collections, admin & author only');
+                }
+            }
+            let profile = await Profile.findOne({user:author_id});
+            let {favorites, bookmarks, recommends} = {...profile.movieCollections};
+            switch (collection) {
+                case "favorite":
+                    favorites.push(movie_id);
+                    break;
+                case "bookmark":
+                    bookmarks.push(movie_id);
+                    break;
+                case "recommend":
+                    recommends.push(movie_id);
+                    break;
+                default:
+                    break;
+            }
+            let new_collection = {
+                favorites, bookmarks, recommends
+            }
+            const new_profile = await Profile.findOneAndUpdate({user:author_id}, {$set: {
+                    movieCollections: new_collection
+                }}, {new: true}).populate('user', ['name', 'type', 'email']);
             res.json(new_profile);
         }
         catch(err) {

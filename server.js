@@ -24,9 +24,9 @@ const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, ()=> console.log(`listen now on ${PORT}`));
 
-app.get('/', (req, res)=>res.send("Test"));
-
 require('./routes/api/users')(app);
 require('./routes/api/auth')(app);
 require('./routes/api/profile')(app);
 require('./routes/api/review')(app);
+require('./routes/api/article')(app);
+require('./routes/api/search')(app);
