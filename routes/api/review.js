@@ -26,6 +26,7 @@ module.exports = (app) => {
                 rating,
                 content,
                 author: req.user.id,
+                originalId: movie_id
             });
 
             await review.save();
