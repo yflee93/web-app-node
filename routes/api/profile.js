@@ -42,7 +42,10 @@ module.exports = (app) => {
                     {user: req.user.id},
                     {$set: {location: location, bio:bio}},
                     {new: true}
-                ).populate('user', ['name', 'type', 'email']);
+                )
+                    .populate('user', ['name', 'type', 'email'])
+                    .populate('reviews')
+                    .populate('articles');
                 return res.json(profile);
             }
 
@@ -61,7 +64,10 @@ module.exports = (app) => {
             profile.movieCollections = newMovieCollections;
             await User.findByIdAndUpdate(req.user.id, {$set: {name}});
             await profile.save();
-            profile = await Profile.findOne({user: req.user.id}).populate('user', ['name', 'type', 'email']);
+            profile = await Profile.findOne({user: req.user.id})
+                .populate('user', ['name', 'type', 'email'])
+                .populate('reviews')
+                .populate('articles');;
             res.json(profile);
 
         } catch(err) {
