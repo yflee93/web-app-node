@@ -17,6 +17,9 @@ const ArticleSchema = mongoose.Schema({
     timestamp: {
         type: Date,
         defaultValue: Date.now
+    },
+    originalId:{
+        type: Number
     }
 });
 module.exports = mongoose.model('article', ArticleSchema);

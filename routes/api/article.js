@@ -31,6 +31,7 @@ module.exports = (app) => {
                 poster,
                 content,
                 author: req.user.id,
+                originalId: movie_id
             });
 
             await article.save();
